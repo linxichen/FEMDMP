@@ -15,7 +15,7 @@ nN = 50;
 Anodes = exp(lnAgrid);
 P = P';
 min_lnA = lnAgrid(1); max_lnA = lnAgrid(end);
-min_K = 300; max_K = 30000;
+min_K = 30; max_K = 5000;
 min_N = 0.1; max_N = 0.99;
 damp_factor = 0.5;
 maxiter = 10000;
