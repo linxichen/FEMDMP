@@ -46,15 +46,15 @@ param = [...
 
 %% Precomputation and initial guess
 coeff_lnmh = zeros(4,1); coeff_lnmf = zeros(4,1);
-coeff_lnmh(1) = 2.25112947095552;
-coeff_lnmh(2) = -0.00422995273814383;
-coeff_lnmh(3) = -0.608159319666493;
-coeff_lnmh(4) = -0.0414379097902152;
+coeff_lnmh(1) = 2.247337592951108;
+coeff_lnmh(2) = -0.041544383160081;
+coeff_lnmh(3) = -0.607644008294761;
+coeff_lnmh(4) = -0.004314696290213;
 
-coeff_lnmf(1) = 2.37578644280901;
-coeff_lnmf(2) = -0.0371929066636178;
-coeff_lnmf(3) = -0.367492859368021;
-coeff_lnmf(4) = 2.17598356908754;
+coeff_lnmf(1) = 2.351435745790115;
+coeff_lnmf(2) = 2.203515288267346;
+coeff_lnmf(3) = -0.364368568546649;
+coeff_lnmf(4) = -0.011952817385299;
 tot_stuff = zeros(N,1); ustuff = zeros(N,1); 
 EMHval = zeros(nA,nK,nN); EMFval = EMHval;
 EMHval_temp = EMHval; EMFval_temp = EMFval;
