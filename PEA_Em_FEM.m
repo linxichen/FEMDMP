@@ -45,27 +45,33 @@ param = [...
  ];
 
 %% Precomputation and initial guess
-coeff_lnmh = zeros(4,1); coeff_lnmf = zeros(4,1);
-coeff_lnmh(1) = 2.247337592951108;
-coeff_lnmh(2) = -0.041544383160081;
-coeff_lnmh(3) = -0.607644008294761;
-coeff_lnmh(4) = -0.004314696290213;
-
-coeff_lnmf(1) = 2.351435745790115;
-coeff_lnmf(2) = 2.203515288267346;
-coeff_lnmf(3) = -0.364368568546649;
-coeff_lnmf(4) = -0.011952817385299;
-tot_stuff = zeros(N,1); ustuff = zeros(N,1); 
-EMHval = zeros(nA,nK,nN); EMFval = EMHval;
-EMHval_temp = EMHval; EMFval_temp = EMFval;
-parfor i = 1:N
-    [i_a,i_k,i_n] = ind2sub([nA,nK,nN],i);
-    a = Anodes(i_a); k  = Knodes(i_k); n = Nnodes(i_n); %#ok<PFBNS>
-    tot_stuff(i) = a*k^aalpha*n^(1-aalpha) + (1-ddelta)*k + z*(1-n);
-    ustuff(i) = xxi*(1-n)^(1-eeta);
-    EMHval(i) = exp([1 log(a) log(k) log(n)]*coeff_lnmh);
-    EMFval(i) = exp([1 log(a) log(k) log(n)]*coeff_lnmf);
+if (exist('PEA_Em_FEM.mat','file'))
+    load('PEA_Em_FEM.mat','EMHval','EMFval');
 end
+if isequal(size(EMHval),[nA nK nN]) ~= 1
+    coeff_lnmh = zeros(4,1); coeff_lnmf = zeros(4,1);
+    coeff_lnmh(1) = 2.247337592951108;
+    coeff_lnmh(2) = -0.041544383160081;
+    coeff_lnmh(3) = -0.607644008294761;
+    coeff_lnmh(4) = -0.004314696290213;
+    
+    coeff_lnmf(1) = 2.351435745790115;
+    coeff_lnmf(2) = 2.203515288267346;
+    coeff_lnmf(3) = -0.364368568546649;
+    coeff_lnmf(4) = -0.011952817385299;
+    tot_stuff = zeros(N,1); ustuff = zeros(N,1);
+    EMHval = zeros(nA,nK,nN); EMFval = EMHval;
+    EMHval_temp = EMHval; EMFval_temp = EMFval;
+    parfor i = 1:N
+        [i_a,i_k,i_n] = ind2sub([nA,nK,nN],i);
+        a = Anodes(i_a); k  = Knodes(i_k); n = Nnodes(i_n); %#ok<PFBNS>
+        tot_stuff(i) = a*k^aalpha*n^(1-aalpha) + (1-ddelta)*k + z*(1-n);
+        ustuff(i) = xxi*(1-n)^(1-eeta);
+        EMHval(i) = exp([1 log(a) log(k) log(n)]*coeff_lnmh);
+        EMFval(i) = exp([1 log(a) log(k) log(n)]*coeff_lnmf);
+    end
+end
+
 
 %% Solve for SS
 kss = k_ss;
