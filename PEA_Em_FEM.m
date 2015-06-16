@@ -17,7 +17,7 @@ P = P';
 min_lnA = lnAgrid(1); max_lnA = lnAgrid(end);
 min_K = 500; max_K = 3000;
 min_N = 0.8; max_N = 0.98;
-damp_factor = 0.8;
+damp_factor = 0.0;
 maxiter = 10000;
 tol = 1e-10;
 options = optimoptions(@fsolve,'Display','none','Jacobian','off');
