@@ -18,8 +18,16 @@ i_right = find(xbounds>=x,1,'first');
 i_left = max(1,i_right-1);
 i_up = find(ybounds>=y,1,'first');
 i_down = max(1,i_up-1);
-xxi = (x - xbounds(i_left))/max(1,(xbounds(i_right)-xbounds(i_left)));
-eeta = (y - ybounds(i_down))/max(1,(ybounds(i_up)-ybounds(i_down)));
+if i_left ~= i_right
+    xxi = (x - xbounds(i_left))/(xbounds(i_right)-xbounds(i_left));
+else 
+    xxi = 0;
+end
+if i_up ~= i_down
+    eeta = (y - ybounds(i_down))/(ybounds(i_up)-ybounds(i_down));
+else 
+    eeta = 0;
+end
 nodesval(1) = allnodesval(i_left,i_down);
 nodesval(2) = allnodesval(i_right,i_down);
 nodesval(3) = allnodesval(i_right,i_up);

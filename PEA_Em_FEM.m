@@ -8,16 +8,16 @@ addpath(genpath('./param'))
 
 %% Set the stage
 mypara;
-nA = 15;
-nK = 50;
-nN = 50;
+nA = 7;
+nK = 30;
+nN = 30;
 [P,lnAgrid] = rouwen(rrho,0,ssigma/sqrt(1-rrho^2),nA);
 Anodes = exp(lnAgrid);
 P = P';
 min_lnA = lnAgrid(1); max_lnA = lnAgrid(end);
-min_K = 30; max_K = 5000;
-min_N = 0.1; max_N = 0.99;
-damp_factor = 0.5;
+min_K = 500; max_K = 3000;
+min_N = 0.8; max_N = 0.98;
+damp_factor = 0.8;
 maxiter = 10000;
 tol = 1e-10;
 options = optimoptions(@fsolve,'Display','none','Jacobian','off');
@@ -82,10 +82,22 @@ while (diff>tol && iter <= maxiter)
         EMF = globaleval(k,n,Knodes,Nnodes,squeeze(EMFval(i_a,:,:)));
         c = 1/(bbeta*EMH);
         q = kkappa/c/(bbeta*EMF);
-        ttheta = (q/xxi)^(1/(eeta-1));
-        v = ttheta*(1-n);
-        kplus = tot_stuff(i) - c - kkappa*v;
-        nplus = (1-x)*n + xxi*v^eeta*(1-n)^(1-eeta);
+        if q <= 0
+            warning('q <= 0!!')
+            q = 0;
+            ttheta = 0;
+            v = 0;
+            kplus = tot_stuff(i) - c - kkappa*v;
+            nplus = (1-x)*n;
+        else
+            ttheta = (q/xxi)^(1/(eeta-1));
+            v = ttheta*(1-n);
+            kplus = tot_stuff(i) - c - kkappa*v;
+            nplus = (1-x)*n + xxi*v^eeta*(1-n)^(1-eeta);
+        end
+    
+        
+        
         
         EMH_hat = 0; EMF_hat = 0;
         for i_node = 1:nA

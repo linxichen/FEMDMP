@@ -7,6 +7,18 @@ function val = localeval(xxi,eeta,nodesval)
 % |      |
 % 1------2
 % xxi is on the x-axis and eeta y-axis
+if xxi < 0
+    error('xxxi < 0');
+end
+if eeta < 0
+    error('eeta < 0');
+end
+if xxi > 1
+    error('xxi > 1');
+end
+if eeta > 1
+    error('eeta > 1');
+end
 val1 = nodesval(1);
 val2 = nodesval(2); 
 val3 = nodesval(3); 
