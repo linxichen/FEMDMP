@@ -23,8 +23,16 @@ tol = 1e-6;
 options = optimoptions(@fsolve,'Display','none','Jacobian','off');
 
 %% Grid creaton
-Knodes = linspace(min_K,max_K,nK);
-Nnodes = linspace(min_N,max_N,nN);
+k_rate = (log(max_K)-log(min_K))/nK;
+n_rate = (log(max_N)-log(min_N))/nN;
+Knodes = zeros(1,nK); Nnodes = zeros(1,nN);
+Knodes(1) = min_K; Nnodes(1) = min_N;
+for i = 2:nK
+    Knodes(i) = (1+k_rate)*Knodes(i-1);
+end
+for i = 2:nN
+    Nnodes(i) = (1+n_rate)*Nnodes(i-1);
+end
 N = nA*nK*nN;
 [Kmesh,Amesh,Nmesh] = meshgrid(Knodes,Anodes,Nnodes);
 
@@ -153,9 +161,9 @@ end;
 
 %% Euler equation error
 nk_ee = 60; nnn_ee = 60;
-Kgrid = linspace(1100,1500,nk_ee);
+Kgrid = linspace(500,2000,nk_ee);
 Agrid = exp(lnAgrid);
-Ngrid = linspace(0.9,0.97,nnn_ee);
+Ngrid = linspace(0.9,0.99,nnn_ee);
 EEerror_c = 999999*ones(nA,nk_ee,nnn_ee);
 EEerror_v = 999999*ones(nA,nk_ee,nnn_ee);
 cc = zeros(nA,nk_ee,nnn_ee);
@@ -247,5 +255,10 @@ result_mf = @(k,n) globaleval(k,n,Knodes,Nnodes,squeeze(EMFval(1,:,:)));
 h_EMF = figure;
 ezsurf(result_mf,[Kgrid(1),Kgrid(end),Ngrid(1),Ngrid(end)])
 print(h_EMF,'-dpsc','./results/EMF.eps')
+
+v_policy = figure;
+plot(Ngrid,squeeze(vv(1,1,:)))
+title('Vacancy policy at lowerest productivity and capital.')
+print(v_policy,'-dpsc','./results/v_policy.eps')
 
 save('PEA_Em_FEM.mat');
