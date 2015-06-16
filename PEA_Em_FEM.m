@@ -8,9 +8,9 @@ addpath(genpath('./param'))
 
 %% Set the stage
 mypara;
-nA = 7;
+nA = 10;
 nK = 30;
-nN = 30;
+nN = 100;
 [P,lnAgrid] = rouwen(rrho,0,ssigma/sqrt(1-rrho^2),nA);
 Anodes = exp(lnAgrid);
 P = P';
@@ -95,10 +95,7 @@ while (diff>tol && iter <= maxiter)
             kplus = tot_stuff(i) - c - kkappa*v;
             nplus = (1-x)*n + xxi*v^eeta*(1-n)^(1-eeta);
         end
-    
-        
-        
-        
+
         EMH_hat = 0; EMF_hat = 0;
         for i_node = 1:nA
             aplus = Anodes(i_node);
@@ -135,62 +132,58 @@ while (diff>tol && iter <= maxiter)
 end;
 
 %% Euler equation error
-nk = 10; nnn = 10;
-Kgrid = linspace(1100,1500,nk);
+nk_ee = 10; nnn_ee = 10;
+Kgrid = linspace(1100,1500,nk_ee);
 Agrid = exp(lnAgrid);
-Ngrid = linspace(0.9,0.97,nnn);
-EEerror_c = 999999*ones(nA,nk,nnn);
-EEerror_v = 999999*ones(nA,nk,nnn);
+Ngrid = linspace(0.9,0.97,nnn_ee);
+EEerror_c = 999999*ones(nA,nk_ee,nnn_ee);
+EEerror_v = 999999*ones(nA,nk_ee,nnn_ee);
+cc = zeros(nA,nk_ee,nnn_ee);
+vv = zeros(nA,nk_ee,nnn_ee);
 
 for i_a = 1:nA
     a = Agrid(i_a);
-	lna_cheby = lnAchebygrid(i_a);
-    for i_k = 1:nk
+    for i_k = 1:nk_ee
         k = Kgrid(i_k);
-        for i_n = 1:nnn
+        for i_n = 1:nnn_ee
             n = Ngrid(i_n);
 			tot_stuff = a*k^aalpha*n^(1-aalpha)+(1-ddelta)*k+z*(1-n);
 			ustuff = xxi*(1-n)^(1-eeta);
-			state = [log(a),log(k),log(n),tot_stuff,ustuff];
-			lnk_cheby = -1 + 2*(log(k)-min_lnK)/(max_lnK-min_lnK);
-			lnn_cheby = -1 + 2*(log(n)-min_lnN)/(max_lnN-min_lnN);
-			lnEMH = ChebyshevND(degree,[lna_cheby,lnk_cheby,lnn_cheby])*coeff_lnmh;
-			lnEMF = ChebyshevND(degree,[lna_cheby,lnk_cheby,lnn_cheby])*coeff_lnmf;
-			c = 1/(bbeta*exp(lnEMH));
-			q = kkappa/c/(bbeta*exp(lnEMF));
-			v = (q/ustuff)^(1/(eeta-1));
-			kplus = tot_stuff - c - kkappa*v;
-			nplus = (1-x)*n + q*v;
-			lnkplus = log(kplus); lnnplus = log(nplus);
-			lnkplus_cheby = -1 + 2*(lnkplus-min_lnK)/(max_lnK-min_lnK);
-			lnnplus_cheby = -1 + 2*(lnnplus-min_lnN)/(max_lnN-min_lnN);
-			if (lnkplus_cheby < -1 || lnkplus_cheby > 1)
-				lnkplus
-				error('kplus out of bound')
-			end
-			if (lnnplus_cheby < -1 || lnnplus_cheby > 1)
-				lnnplus_cheby
-				lnnplus
-				error('nplus out of bound')
-			end
+            
+            EMH = globaleval(k,n,Knodes,Nnodes,squeeze(EMHval(i_a,:,:)));
+            EMF = globaleval(k,n,Knodes,Nnodes,squeeze(EMFval(i_a,:,:)));
+            c = 1/(bbeta*EMH);
+            q = kkappa/c/(bbeta*EMF);            
+            
+            if q <= 0
+                warning('q <= 0!!')
+                q = 0;
+                ttheta = 0;
+                v = 0;
+                kplus = tot_stuff - c - kkappa*v;
+                nplus = (1-x)*n;
+            else
+                ttheta = (q/xxi)^(1/(eeta-1));
+                v = ttheta*(1-n);
+                kplus = tot_stuff - c - kkappa*v;
+                nplus = (1-x)*n + xxi*v^eeta*(1-n)^(1-eeta);
+            end
+            
+            cc(i_a,i_k,i_n) = c;
+            vv(i_a,i_k,i_n) = v;
 
 			% Find expected mh, mf tomorrow if current coeff applies tomorrow
-			EMH_hat = 0;
-			EMF_hat = 0;
-			for i_node = 1:nA
-				lnaplus = lnAgrid(i_node);
-				lnaplus_cheby = -1 + 2*(lnaplus-min_lnA)/(max_lnA-min_lnA);
-				if (lnaplus_cheby < -1 || lnaplus_cheby > 1)
-					error('Aplus out of bound')
-				end
-				lnEMH_plus = ChebyshevND(degree,[lnaplus_cheby,lnkplus_cheby,lnnplus_cheby])*coeff_lnmh;
-				lnEMF_plus = ChebyshevND(degree,[lnaplus_cheby,lnkplus_cheby,lnnplus_cheby])*coeff_lnmf;
-				cplus = 1/(bbeta*exp(lnEMH_plus));
-				qplus = kkappa/cplus/(bbeta*exp(lnEMF_plus));
-				tthetaplus = (qplus/xxi)^(1/(eeta-1));
-				EMH_hat = EMH_hat + P(i_a,i_node)*((1-ddelta+aalpha*exp(lnaplus)*(kplus/nplus)^(aalpha-1))/cplus);
-				EMF_hat = EMF_hat + P(i_a,i_node)*(( (1-ttau)*((1-aalpha)*exp(lnaplus)*(kplus/nplus)^aalpha-z-ggamma*cplus) + (1-x)*kkappa/qplus - ttau*kkappa*tthetaplus )/cplus );
-			end        
+            EMH_hat = 0; EMF_hat = 0;
+            for i_node = 1:nA
+                aplus = Anodes(i_node);
+                EMH_plus = globaleval(kplus,nplus,Knodes,Nnodes,squeeze(EMHval(i_node,:,:)));
+                EMF_plus = globaleval(kplus,nplus,Knodes,Nnodes,squeeze(EMFval(i_node,:,:)));
+                cplus = 1/(bbeta*EMH_plus);
+                qplus = kkappa/cplus/(bbeta*EMF_plus);
+                tthetaplus = (qplus/xxi)^(1/(eeta-1));
+                EMH_hat = EMH_hat + P(i_a,i_node)*((1-ddelta+aalpha*aplus*(kplus/nplus)^(aalpha-1))/cplus);
+                EMF_hat = EMF_hat + P(i_a,i_node)*(( (1-ttau)*((1-aalpha)*aplus*(kplus/nplus)^aalpha-z-ggamma*cplus) + (1-x)*kkappa/qplus - ttau*kkappa*tthetaplus )/cplus );
+            end
 
 			c_imp = 1/(bbeta*EMH_hat);
 			q_imp = kkappa/c_imp/(bbeta*EMF_hat);
@@ -208,157 +201,21 @@ EEerror_v_inf = norm(EEerror_v(:),inf)
 EEerror_c_mean = mean(EEerror_c(:));
 EEerror_v_mean = mean(EEerror_v(:));
 
-figure
-plot(Kgrid,squeeze(EEerror_c(ceil(nA/2),:,ceil(nnn/2))))
+%% Export results
+mkdir('results')
+h_c = figure;
+plot(Kgrid,squeeze(EEerror_c(ceil(nA/2),:,ceil(nnn_ee/2))))
+title('Euler Error of Consumption')
+print(h_c,'-dpsc','./results/EEerror_c.eps')
 
-figure
-plot(Kgrid,squeeze(EEerror_v(ceil(nA/2),:,ceil(nnn/2))))
+h_v = figure;
+plot(Kgrid,squeeze(EEerror_v(ceil(nA/2),:,ceil(nnn_ee/2))))
+title('Euler Error of Vacancy')
+print(h_v,'-dpsc','./results/EEerror_v.eps')
 
-%% Implied policy functions and find wages
-lnAgrid = csvread('../CUDA_VFI/results/Agrid.csv');
-lnKgrid = csvread('../CUDA_VFI/results/Kgrid.csv');
-lnNgrid = csvread('../CUDA_VFI/results/Ngrid.csv');
-nA = length(lnAgrid);
-nk = length(lnKgrid);
-nnn = length(lnNgrid);
+result_mf = @(k,n) globaleval(k,n,Knodes,Nnodes,squeeze(EMFval(1,:,:)));
+h_EMF = figure;
+ezsurf(result_mf,[Kgrid(1),Kgrid(end),Ngrid(1),Ngrid(end)])
+print(h_EMF,'-dpsc','./results/EMF.eps')
 
-kk = zeros(nA,nk,nnn);
-cc = kk;
-vv = kk;
-nn = kk;
-ttheta_export = kk;
-wage_export = kk;
-cc_dynare = kk;
-kk_dynare = kk;
-nn_dynare = kk;
-vv_dynare = kk;
-
-mmummu = kk;
-for i_k = 1:nk
-    for i_n = 1:nnn
-        for i_A = 1:nA
-            state(1) = lnAgrid(i_A); A = state(1);
-            state(2) = lnKgrid(i_k); k = state(2);
-            state(3) = lnNgrid(i_n); n = state(3);
-            EM = exp([1 log(state)]*[coeff_mh coeff_mf]);
-            
-            y = A*(k)^(aalpha)*(n)^(1-aalpha);
-            c = (bbeta*EM(1))^(-1);
-            ttheta = (kkappa/(c*xxi*bbeta*EM(2)))^(1/(eeta-1));
-            v = ttheta*(1-n);
-            mh = (1-ddelta+aalpha*y/k)/c;
-            mf = ( (1-ttau)*((1-aalpha)*y/n-z-ggamma*c) + (1-x)*kkappa/xxi*ttheta^(1-eeta) - ttau*kkappa*ttheta )/c;
-            w = ttau*A*k^(aalpha)*(1-aalpha)*n^(-aalpha) + (1-ttau)*(z+ggamma*c) + ttau*kkappa*ttheta;
-    
-            kk(i_A,i_k,i_n) = y - c +(1-ddelta)*k - kkappa*v + z*(1-nn(i_A,i_k,i_n));
-            nn(i_A,i_k,i_n) = (1-x)*n + xxi*ttheta^(eeta)*(1-n);
-            cc(i_A,i_k,i_n) = c;
-            vv(i_A,i_k,i_n) = v;
-            
-            cc_dynare(i_A,i_k,i_n) = exp(2.111091 + 0.042424/rrho*log(lnAgrid(i_A))/ssigma + 0.615500*(log(lnKgrid(i_k))-log(k_ss)) + 0.014023*(log(lnNgrid(i_n))-log(n_ss)) );
-            kk_dynare(i_A,i_k,i_n) = exp(7.206845 + 0.006928/rrho*log(lnAgrid(i_A))/ssigma + 0.997216*(log(lnKgrid(i_k))-log(k_ss)) + 0.005742*(log(lnNgrid(i_n))-log(n_ss)) );
-            nn_dynare(i_A,i_k,i_n) = exp(-0.056639 + 0.011057/rrho*log(lnAgrid(i_A))/ssigma + 0.001409*(log(lnKgrid(i_k))-log(k_ss)) + 0.850397*(log(lnNgrid(i_n))-log(n_ss)) );
-            
-            % Export prices
-            wage_export(i_A,i_k,i_n) = w;
-            ttheta_export(i_A,i_k,i_n) = ttheta;
-        end
-    end
-end
-save('PEA_Em.mat');
-
-
-i_mid_n = ceil(nnn/2);
-i_mid_A = ceil(nA/2);
-linewitdh=1.5;
-figure
-plot(lnKgrid,squeeze(kk(i_mid_A,:,i_mid_n)),lnKgrid,squeeze(kk_dynare(i_mid_A,:,i_mid_n)),'LineWidth',linewitdh)
-axis('tight')
-xlabel('k(t)')
-ylabel('k(t+1)')
-legend('Nonlinear','Linear')
-
-figure
-plot(lnKgrid,squeeze(nn(i_mid_A,:,i_mid_n)),lnKgrid,squeeze(nn_dynare(i_mid_A,:,i_mid_n)),'LineWidth',linewitdh)
-axis('tight')
-xlabel('k(t)')
-ylabel('n(t+1)')
-legend('Nonlinear','Linear')
-
-figure
-plot(lnKgrid,squeeze(cc(i_mid_A,:,i_mid_n)),lnKgrid,squeeze(cc_dynare(i_mid_A,:,i_mid_n)),'LineWidth',linewitdh)
-axis('tight')
-xlabel('k(t)')
-ylabel('c(t)')
-legend('Nonlinear','Linear')
-
-figure
-plot(lnKgrid,squeeze(wage_export(i_mid_A,:,i_mid_n)),'LineWidth',linewitdh)
-axis('tight')
-xlabel('k(t)')
-ylabel('wage')
-legend('Nonlinear')
-
-figure
-plot(lnKgrid,squeeze(ttheta_export(i_mid_A,:,i_mid_n)),'LineWidth',linewitdh)
-axis('tight')
-xlabel('k(t)')
-ylabel('Tightness')
-legend('Nonlinear')
-
-%% Ergodic set where art thou?
-    figure
-    scatter3(Asim,ksim,nsim)
-    xlabel('Productivity')
-    ylabel('Capital')
-    zlabel('Employment')
-
-%% Dynamics
-Aindex = ceil(nA/2);
-figure
-[Kmesh,Nmesh] = meshgrid(lnKgrid,lnNgrid);
-DK = squeeze(kk(Aindex,:,:))-Kmesh';
-DN = squeeze(nn(Aindex,:,:))-Nmesh';
-quiver(Kmesh',Nmesh',DK,DN,2);
-axis tight
-
-%% Paths 1
-T = 5000; scale = 0;
-A = 0.6;
-k1 = zeros(1,T); n1 = zeros(1,T);
-k1(1) = 1100; n1(1) = 0.90;
-for t = 1:T
-    state = [A k1(t) n1(t)];
-    EM = exp([1 log(state)]*[coeff_mh coeff_mf]);
-    y = A*(k1(t))^(aalpha)*(n1(t))^(1-aalpha);
-    c = (bbeta*EM(1))^(-1);
-    ttheta = (kkappa/(c*xxi*bbeta*EM(2)))^(1/(eeta-1));
-    v = ttheta*(1-n1(t));
-    
-    if t < T
-    k1(t+1) = y - c +(1-ddelta)*k1(t) - kkappa*v;
-    n1(t+1) = (1-x)*n1(t) + xxi*ttheta^(eeta)*(1-n1(t));
-    end
-end
-xx = k1; y = n1;
-u = [k1(2:end)-k1(1:end-1) 0];
-v = [n1(2:end)-n1(1:end-1) 0];
-
-figure
-quiver(xx,y,u,v,scale,'Linewidth',0.3);
-
-
-
-wage_export = wage_export(:);
-ttheta_export = ttheta_export(:);
-cc = cc(:);
-kk = kk(:);
-nn = nn(:);
-dlmwrite('../CUDA_VFI/wage_export.csv',wage_export,'precision',16);
-dlmwrite('../CUDA_VFI/ttheta_export.csv',ttheta_export,'precision',16);
-dlmwrite('../CUDA_VFI/cPEA_export.csv',cc,'precision',16);
-dlmwrite('../CUDA_VFI/kPEA_export.csv',kk,'precision',16);
-dlmwrite('../CUDA_VFI/nPEA_export.csv',nn,'precision',16);
-
-
-save('PEA_Em.mat');
+save('PEA_Em_FEM.mat');
