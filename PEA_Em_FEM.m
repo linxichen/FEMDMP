@@ -161,13 +161,17 @@ end;
 
 %% Euler equation error
 nk_ee = 60; nnn_ee = 60;
-Kgrid = linspace(500,2000,nk_ee);
+Kgrid = linspace(0.5*k_ss,1.5*k_ss,nk_ee);
 Agrid = exp(lnAgrid);
-Ngrid = linspace(0.9,0.99,nnn_ee);
+Ngrid = linspace(0.96*n_ss,1.04*n_ss,nnn_ee);
 EEerror_c = 999999*ones(nA,nk_ee,nnn_ee);
 EEerror_v = 999999*ones(nA,nk_ee,nnn_ee);
 cc = zeros(nA,nk_ee,nnn_ee);
 vv = zeros(nA,nk_ee,nnn_ee);
+tthetattheta = zeros(nA,nk_ee,nnn_ee);
+cc_dynare = cc;
+vv_dynare = vv;
+tthetattheta_dynare = tthetattheta; 
 
 for i_a = 1:nA
     a = Agrid(i_a);
@@ -198,7 +202,11 @@ for i_a = 1:nA
             end
             
             cc(i_a,i_k,i_n) = c;
+            cc_dynare(i_a,i_k,i_n) = exp( 2.130385+0.039519*(log(a)/rrho-0)+0.606879*(log(k)-log(k_ss))+0.005573*(log(n)-log(n_ss)) );
             vv(i_a,i_k,i_n) = v;
+            vv_dynare(i_a,i_k,i_n) = exp( -2.899249+3.417972*(log(a)/rrho-0)+0.451375*(log(k)-log(k_ss))+(-17.928147)*(log(n)-log(n_ss)) );
+            tthetattheta(i_a,i_k,i_n) = ttheta;
+            tthetattheta_dynare(i_a,i_k,i_n) = exp( 0+3.417972*(log(a)/rrho-0)+0.451375*(log(k)-log(k_ss))+(-0.767653)*(log(n)-log(n_ss)) );
 
 			% Find expected mh, mf tomorrow if current coeff applies tomorrow
             EMH_hat = 0; EMF_hat = 0;
@@ -260,5 +268,29 @@ v_policy = figure;
 plot(Ngrid,squeeze(vv(1,1,:)))
 title('Vacancy policy at lowerest productivity and capital.')
 print(v_policy,'-dpsc','./results/v_policy.eps')
+
+c_policy = figure;
+plot(Kgrid,squeeze(cc(ceil(nA/2),:,ceil(nnn_ee/2))),Kgrid,squeeze(cc_dynare(ceil(nA/2),:,ceil(nnn_ee/2))))
+title('Consumption policies at SS.')
+print(c_policy,'-dpsc','./results/c_policy.eps')
+xlabel('Capital')
+
+ttheta_policy = figure;
+plot(Kgrid,squeeze(tthetattheta(ceil(nA/2),:,ceil(nnn_ee/2))),Kgrid,squeeze(tthetattheta_dynare(ceil(nA/2),:,ceil(nnn_ee/2))))
+title('\theta around SS')
+print(ttheta_policy,'-dpsc','./results/ttheta_policy.eps')
+xlabel('Capital')
+
+ttheta_policyN = figure;
+plot(Ngrid,squeeze(tthetattheta(ceil(nA/2),ceil(nk_ee/2),:)),Ngrid,squeeze(tthetattheta_dynare(ceil(nA/2),ceil(nk_ee/2),:)))
+title('\theta around SS')
+print(ttheta_policyN,'-dpsc','./results/ttheta_policy2.eps')
+xlabel('Employment')
+
+ttheta_policyA = figure;
+plot(Anodes,squeeze(tthetattheta(:,ceil(nk_ee/2),ceil(nnn_ee/2))),Anodes,squeeze(tthetattheta_dynare(:,ceil(nk_ee/2),ceil(nnn_ee/2))))
+title('\theta around SS')
+xlabel('Productivity')
+print(ttheta_policyA,'-dpsc','./results/ttheta_policy3.eps')
 
 save('PEA_Em_FEM.mat');

@@ -4,3 +4,13 @@
 *.m~
 
 *.eps
+
+Dynare/dmp_dsge_dynamic.m
+
+Dynare/dmp_dsge_set_auxiliary_variables.m
+
+Dynare/dmp_dsge_static.m
+
+Dynare/dmp_dsge.log
+
+Dynare/dmp_dsge.m
