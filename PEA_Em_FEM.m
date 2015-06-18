@@ -11,6 +11,7 @@ mypara;
 nA = 9;
 nK = 50;
 nN = 50;
+T = 10000;
 [P,lnAgrid] = rouwen(rrho,0,ssigma/sqrt(1-rrho^2),nA);
 Anodes = exp(lnAgrid);
 P = P';
@@ -246,6 +247,52 @@ EEerror_v_inf = norm(EEerror_v(:),inf)
 
 EEerror_c_mean = mean(EEerror_c(:));
 EEerror_v_mean = mean(EEerror_v(:));
+
+%% Simulation
+P_cdf = cumsum(P,2);
+aindexsim = zeros(1,T); aindexsim(1) = ceil(nA/2);
+ksim = k_ss*ones(1,T); nsim = n_ss*ones(1,T);
+tthetasim = zeros(1,T); vsim = zeros(1,T); usim = zeros(1,T);
+for t = 1:T
+    asim(t) = Anodes(aindexsim(t)); a = asim(t);
+    k = ksim(t); n = nsim(t);
+    tot_stuff = a*k^aalpha*n^(1-aalpha)+(1-ddelta)*k+z*(1-n);
+    ustuff = xxi*(1-n)^(1-eeta);
+    
+    EMH = globaleval(k,n,Knodes,Nnodes,squeeze(EMHval(aindexsim(t),:,:)));
+    EMF = globaleval(k,n,Knodes,Nnodes,squeeze(EMFval(aindexsim(t),:,:)));
+    c = 1/(bbeta*EMH);
+    q = kkappa/c/(bbeta*EMF);
+    
+    if q <= 0
+        warning('q <= 0!!')
+        q = 0;
+        ttheta = 0;
+        v = 0;
+        kplus = tot_stuff - c - kkappa*v;
+        nplus = (1-x)*n;
+    else
+        ttheta = (q/xxi)^(1/(eeta-1));
+        v = ttheta*(1-n);
+        kplus = tot_stuff - c - kkappa*v;
+        nplus = (1-x)*n + xxi*v^eeta*(1-n)^(1-eeta);
+    end
+    
+    tthetasim(t) = ttheta;
+    vsim(t) = v;
+    usim(t) = 1-nsim(t);
+    
+    if t <= T-1
+        uu = rand;
+        aindexsim(t+1) = find(P_cdf(aindexsim(t),:)>=uu,1,'first');
+        ksim(t+1) = kplus;
+        nsim(t+1) = nplus;
+    end
+end
+
+[~,ttheta_cyc] = hpfilter(log(tthetasim),12^2*100);
+[~,u_cyc] = hpfilter(log(usim),12^2*100);
+[~,v_cyc] = hpfilter(log(vsim),12^2*100);
 
 %% Export results
 mkdir('results')

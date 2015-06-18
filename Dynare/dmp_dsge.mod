@@ -14,6 +14,7 @@ mh          //
 mf
 q
 mmu
+u
 
 // exogenous variables
 A          // variable 14
@@ -87,6 +88,9 @@ model;
   // 11. Employment LOM
   exp(n) = (1-x)*exp(n(-1)) + exp(mmu)*(1-exp(n(-1)));
 
+  // 12. Define unemployment
+  exp(u) = 1 - exp(n);
+
 end;
 
 //----------------------------------------------------------------
@@ -116,5 +120,5 @@ var eps;
 stderr 1;
 end;
 
-stoch_simul(order = 1,periods=250000,irf=200); % compute polices up to 1st order
+stoch_simul(order = 1,periods=250000,irf=200,hp_filter=14400); % compute polices up to 1st order
 save
